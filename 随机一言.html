@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>打字机动画 - 震动效果版</title>
+    <style>
+        body {
+            font-family: "Courier New", Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .text-container {
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+        }
+        .text {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow: hidden;
+            min-height: 1em;
+        }
+        .char {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeInUp 0.3s forwards, shake 0.2s ease-in-out;
+        }
+
+        /* 文字渐显并上升 */
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 震动效果 */
+        @keyframes shake {
+            0% { transform: translateX(-5px); }
+            25% { transform: translateX(5px); }
+            50% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .cursor {
+            width: 2px;
+            height: 1em;
+            background-color: black;
+            margin-left: 2px;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            50.01%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="text-container">
+    <div class="text" id="text"></div>
+    <div class="cursor"></div>
+</div>
+
+<script>
+    const textElement = document.getElementById('text');
+    let message = "";
+    let index = 0;
+    let isDeleting = false;
+
+    function randomRange(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function typeWriter() {
+        // 清除文字后面的
+        const spans = textElement.querySelectorAll('span');
+        spans.forEach((span, i) => {
+            if (i >= index) {
+                span.remove();
+            }
+        });
+
+        if (!isDeleting) {
+            if (index < message.length) {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = message[index];
+                textElement.appendChild(span);
+                index++;
+            } else {
+                isDeleting = true;
+                setTimeout(typeWriter, 1000); // 打完后停留1秒
+                return;
+            }
+        } else {
+            if (index > 0) {
+                index--;
+            } else {
+                fetchTextFromAPI();
+                return;
+            }
+        }
+
+        let typingSpeed = isDeleting ? randomRange(200, 300) : randomRange(80, 150);
+        setTimeout(typeWriter, typingSpeed);
+    }
+
+    function fetchTextFromAPI() {
+        fetch('http://154.40.44.152:8000/?encode=text&max_length=10&c=d&c=e&c=i&c=k') // <<<—— 填你的API地址
+            .then(response => response.text())
+            .then(data => {
+                message = data.trim() || "默认文字";
+                textElement.innerHTML = ""; // 删除完清空内容，防止累积
+                index = 0;
+                isDeleting = false;
+                setTimeout(typeWriter, 500); // 小停顿后打字
+            })
+            .catch(error => {
+                console.error('接口请求失败:', error);
+                message = "接口请求失败，使用默认文字。";
+                textElement.innerHTML = "";
+                index = 0;
+                isDeleting = false;
+                setTimeout(typeWriter, 500);
+            });
+    }
+
+    fetchTextFromAPI();
+</script>
+
+</body>
+</html>
